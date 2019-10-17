@@ -1,6 +1,7 @@
 class Node:
     def __init__(self):
         self.childs = []
+        self.name = ''
         self.parent = None
         self.balance = 0.0
 

@@ -2,6 +2,7 @@
 class Node:
     def __init__(self):
         self.childs = []
+        self.name = ''
         self.parent = None
         self.balance = 0.0
 
@@ -17,13 +18,6 @@ class Node:
 ledgerImportsList = []
 priceDbList = []
 root = Node()
-# ['D $1,000.00'                        , 
-#  'N $'                                ,
-#  'P 2012/11/25 05:04:00 AG $34.13'    ,
-#  'P 2012/11/25 05:04:00 AU $1751.90'  ,
-#  'P 2012/11/25 05:04:00 BTC $12.46'   ,
-#  'P 2012/11/26 05:04:00 CAD $1.0066'  , 
-#  'P 2019/11/22 05:03:00 MXN $20.00'   ]
 
 def main(price_db, f):
     global ledgerImportsList
@@ -48,9 +42,34 @@ def ledgerImports(f):
     ledgerImportsList = file.read().splitlines()
     file.close()
 
+def breadthSearch(elements, node):
+    if len(elements) == 0:
+        return node
+    
+    for value in node.childs:
+        if elements[0] == value.name:
+            elements.remove(elements[0])
+            return breadthSearch(elements, value)
+
+    n = Node()
+    n.name = elements[0]
+    node.childs.append(n)
+    elements.remove(elements[0])
+    breadthSearch(elements, n)
+            
+
+
+        
+        
+
+
+
 def addNode(accounts, ammount):
+    global root
     accounts = accounts.split(':')
     print(accounts)
+    node = breadthSearch(accounts, root.childs)
+    node.balance =+ ammount
 
 
 def buildTree(file):
