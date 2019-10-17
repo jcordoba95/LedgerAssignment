@@ -1,0 +1,13 @@
+; Income
+2011/11/21 Payment for hard work completed
+	Bank:Paypal		$350.00
+	Income:Hard Work
+2012/7/1 Partial payment from Client X
+	Bank:Paypal		$100
+	Receivable:ClientX
+2013/7/1 My test
+	Bank:Paypal:Business		$7.79
+	Receivable:ClientX:Inventory
+2013/7/1 Test 2
+	Bank:Paypal:Operations		$200.00
+	Receivable:ClientY:Inventory		$200.00
