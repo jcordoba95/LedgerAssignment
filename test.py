@@ -15,16 +15,15 @@ class Posting:
         # "coin"    : amount,
         # "BTC"     : 0.0,
         # "$"       : 300.00
+        # etc.
 
 
 
 priceDbList = []
 ledgerImportsList = []
 transactionData = []
-coinsBalances = {
-    "default": "0"
-}
-# print(sys.argv)
+sortedTransactionData = []
+balCoins = {}
 
 def priceDbParser(file):
     file = open(file, 'r')
@@ -33,14 +32,13 @@ def priceDbParser(file):
     file.close()
 
 def main(arguments):
+    global sortedTransactionData
     arguments.remove(arguments[0])
     comesFrom = ''
-    priceLoaded = False
     indexLoaded = False
     for arg in arguments:
         if comesFrom == '--price-db':
             priceDbFile(arg)
-            priceLoaded = True
             comesFrom = ''
             continue
         if comesFrom == '-f':
@@ -58,7 +56,6 @@ def main(arguments):
         if line.startswith('!include'):
             includeParser(line.split(' ')[1])
 
-            
     if indexLoaded:
         # Read now the other flags
         if '--sort' in arguments:
@@ -70,6 +67,18 @@ def main(arguments):
                     continue
                 if flag:
                     sort = arg
+                    break
+            if not sort:
+                print("Missing --sort parameter date.")
+            # TODO: Sort stuff goes here:
+            sortedTransactionData = transactionData
+
+        else:
+            sortedTransactionData = transactionData
+        if 'print' in arguments: ledgerPrint()
+        if 'register' in arguments: ledgerRegister()
+            
+            
         
 
 
@@ -114,13 +123,13 @@ def includeParser(file):
                 if len(trans.postings) == 0:
                     # First transaction in the iteration
                     trans.date = result.string
-                    trans.description = data.replace(trans.date, '')
+                    trans.description = data.replace(trans.date + ' ', '')
                 else:
                     # Add current Transaction to our transactions list
                     transactionData.append(trans)
                     trans = Transaction()
                     trans.date = result.string
-                    trans.description = data.replace(trans.date, '')
+                    trans.description = data.replace(trans.date + ' ', '')
             
                 
                 # print(result.string)
@@ -131,7 +140,6 @@ def includeParser(file):
                 flag = False
 
                 account = ""
-                balances = {}
                 data = data[1:]
                 # Iterate to split account from amount
                 for char in data:
@@ -175,13 +183,61 @@ def includeParser(file):
             trans.postings[index].balances[coin] *= -1
     transactionData.append(trans)
 
-            
+def ledgerPrint():
+    for transaction in sortedTransactionData:
+        print('\n')
+        print(transaction.date + ' ' + transaction.description)
+        for posting in transaction.postings:
+            account = '\t' + posting.account
+            amount = ''
+            for key in posting.balances:
+                if key == '$':
+                    amount = key + ' ' + str(posting.balances[key])
+                else:
+                    amount = str(posting.balances[key]) + ' ' + key
 
+            print('{:45}{:>5}'.format(account, amount))
 
-            
+def ledgerRegister():
+    # date  desc  acc  movement   coins totals
+    # :9    :20   :20  :>5            :>5
+    reminders = {}
+    for transaction in sortedTransactionData:
+        date = transaction.date
+        desc = transaction.description
+        if len(desc) > 20:
+            cant = len(desc) - 17
+            desc = desc[:-cant]
+            desc += '..'
+        account = ''
 
-                
-    
+        for posting in transaction.postings:
+            account = posting.account
+            for key in posting.balances:
+                # Determine amount in left & right side:
+                reminders[key] = float(reminders.get(key, '0')) + posting.balances[key]
+                left = ''
+                right = ''
+                if key == '$':
+                    left = key + ' ' + str(posting.balances.get(key))
+                    right = key + ' ' + str(reminders.get(key, '0'))
+                else:
+                    left = str(posting.balances.get(key)) + ' ' + key
+                    right = str(reminders.get(key, '0')) + ' ' + key
+                # Print first value of the transaction
+                print('{:9}{:20}{:20}{:>10}{:>10}'.format(date, desc, account, left, right))
+                # Print accounts current register:
+                for key2 in reminders:
+                    if reminders.get(key2) == 0:
+                        continue
+                    if key2 == key:
+                        continue
+                    elif key2 == '$':
+                        right = key2 + ' ' + str(reminders.get(key2))
+                        print('{:9}{:20}{:20}{:>10}{:>10}'.format('', '', '', '', right))
+                    else:
+                        right = str(reminders.get(key2)) + ' ' + key2
+                        print('{:9}{:20}{:20}{:>10}{:>10}'.format('', '', '', '', right))
 
 if __name__ == '__main__':
     main(sys.argv)
