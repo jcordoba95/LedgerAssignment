@@ -1,6 +1,5 @@
 import sys
 import re
-import datetime
 
 class Transaction:
     def __init__(self):
@@ -72,9 +71,8 @@ def main(arguments):
                     break
             if not sort:
                 print("Missing --sort parameter date.")
+                sys.exit()
             sortedTransactionData = sorted(transactionData, key=lambda transaction: transaction.date)
-
-
         else:
             sortedTransactionData = transactionData
         if 'print' in arguments: ledgerPrint()
@@ -115,7 +113,6 @@ def includeParser(file):
             if data[0].isdigit():
                 date = data.split(' ')[0]
                 result = regex.search(date)
-
                 # Add inverted values from total to the last Posting
                 if sub:
                     index = len(trans.postings) - 1
@@ -165,22 +162,15 @@ def includeParser(file):
 
                 if len(amount) == 0:
                     # Add the total negative amount to posting.amount
-                    sub = True
-                    
+                    sub = True   
                 elif len(amount) == 2:
                     posting.balances[amount[1]] = float(amount[0])
                     total[amount[1]] = float(amount[0])
-                    
-                    # amount = float(amount[0])
                 elif len(amount) == 1:
                     number = amount[0].replace('$', '')
                     posting.balances['$'] = float(number)
                     total['$'] = float(number)
-
-                    # amount = amount[0].replace('$', '')
                 trans.postings.append(posting)
-    # END FOR
-    
     # Add last transaction into our Transaction list
     if sub:
         index = len(trans.postings) - 1
@@ -203,7 +193,6 @@ def ledgerPrint():
                     amount = key + ' ' + str(posting.balances[key])
                 else:
                     amount = str(posting.balances[key]) + ' ' + key
-
             print('{:45}{:>5}'.format(account, amount))
 
 # This function prints out the register of our account's transactions.
@@ -232,7 +221,7 @@ def ledgerRegister():
                     left = str(posting.balances.get(key)) + ' ' + key
                     right = str(reminders.get(key, '0')) + ' ' + key
                 # Print first value of the transaction
-                print('{:9}{:20}{:20}{:>10}{:>10}'.format(date, desc, account, left, right))
+                print('{:9} {:20} {:40} {:>15} {:<5}'.format(date, desc, account, left, right))
                 # Print accounts current register:
                 for key2 in reminders:
                     if reminders.get(key2) == 0:
@@ -241,10 +230,10 @@ def ledgerRegister():
                         continue
                     elif key2 == '$':
                         right = key2 + ' ' + str(reminders.get(key2))
-                        print('{:9}{:20}{:20}{:>10}{:>10}'.format('', '', '', '', right))
+                        print('{:9} {:20} {:40} {:>15} {:<5}'.format('', '', '', '', right))
                     else:
                         right = str(reminders.get(key2)) + ' ' + key2
-                        print('{:9}{:20}{:20}{:>10}{:>10}'.format('', '', '', '', right))
+                        print('{:9} {:20} {:40} {:>15} {:<5}'.format('', '', '', '', right))
 
 # This function prints out the accounts current balance and total balance.
 # This function creates a data structure of a tree of the accounts found
@@ -290,7 +279,6 @@ def printTree(node):
                     else:
                         val = str(child.balances.get(key)) + ' ' + key
                     print('{:>20}'.format(val) + '  ' + tabulation + '{:<40}'.format(child.name))
-                    # print(tabulation + '{:>23}  {:<40}'.format(val, child.name))
                     continue
                 val = ''
                 if key == '$':
@@ -298,11 +286,8 @@ def printTree(node):
                 else:
                     val = str(child.balances.get(key)) + ' ' + key
                 print('{:>20}'.format(val) + '  ' + tabulation + '{:<40}'.format(child.name))
-                # print(tabulation + '{:>23}  {:<40}'.format(val, ' '))
             printTree(child)
 
-    
-    
 # This function will take our tree of accounts and add to the nodes
 # the child's balance amount to their balance dictionary. 
 # This includes the root node, where we will store the total 
@@ -344,10 +329,6 @@ def checkExistance(elements, node):
     n.parent = node
     elements.remove(elements[0])
     return checkExistance(elements, n)
-
-
-
-
 
 if __name__ == '__main__':
     main(sys.argv)
