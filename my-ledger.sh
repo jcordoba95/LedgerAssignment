@@ -1,3 +1,3 @@
 #!/bin/bash
-ledger --price-db prices_db \
+python ledger.py --price-db prices_db \
 -f index.ledger "$@"

@@ -1,12 +1,12 @@
 import sys
 import re
+import datetime
 
 class Transaction:
     def __init__(self):
         self.date = ""
         self.description = ""
         self.postings = []
-
 
 class Posting:
     def __init__(self):
@@ -20,11 +20,11 @@ class Node:
         self.parent = None
         self.childs = []
 
-
 priceDbList = []
 ledgerImportsList = []
 transactionData = []
 sortedTransactionData = []
+auxiliarDatesList = []
 root = Node()
 
 def priceDbParser(file):
@@ -72,8 +72,8 @@ def main(arguments):
                     break
             if not sort:
                 print("Missing --sort parameter date.")
-            # TODO: Sort stuff goes here:
-            sortedTransactionData = transactionData
+            sortedTransactionData = sorted(transactionData, key=lambda transaction: transaction.date)
+
 
         else:
             sortedTransactionData = transactionData
@@ -83,9 +83,6 @@ def main(arguments):
 
         print('Ledger finished.')
             
-            
-        
-
 # This function reads the prices_db file.
 def priceDbFile(file):
     file = open(file, 'r')
@@ -149,7 +146,7 @@ def includeParser(file):
 
                 account = ""
                 data = data[1:]
-                # Iterate to split account from amount
+                # Iterate char by char to split account from amount
                 for char in data:
                     if char == '\t':
                         break
@@ -260,7 +257,51 @@ def ledgerBalance():
                 node.balances[key] = float(node.balances.get(key, 0)) + posting.balances.get(key)
     iterateTree(root)
     # Now the tree has the corresponding values and is ready to be printed
+    printTree(root)
+    print('-----------------------')
+    for key in root.balances:
+        val = ''
+        if key == '$':
+            val = key + '  ' + str(root.balances.get(key))
+        else:
+            val = str(root.balances.get(key)) + ' ' + key
+        print('{:>23}'.format(val))
 
+# Determine the amount of tabulations there has to be for the
+# 'balance' command's account nesting
+def detTab(node):
+    if node.parent != None:
+        return detTab(node.parent) + '   '
+    return ''
+
+# Prints tree in balance format
+def printTree(node):
+    tabulation = detTab(node)
+
+    if len(node.childs) != 0:
+        for child in node.childs:
+            first = True
+            for key in child.balances:
+                if first:
+                    first = False
+                    val = ''
+                    if key == '$':
+                        val = key + ' ' + str(child.balances.get(key))
+                    else:
+                        val = str(child.balances.get(key)) + ' ' + key
+                    print('{:>20}'.format(val) + '  ' + tabulation + '{:<40}'.format(child.name))
+                    # print(tabulation + '{:>23}  {:<40}'.format(val, child.name))
+                    continue
+                val = ''
+                if key == '$':
+                    val = key + ' ' + str(child.balances.get(key))
+                else:
+                    val = str(child.balances.get(key)) + ' ' + key
+                print('{:>20}'.format(val) + '  ' + tabulation + '{:<40}'.format(child.name))
+                # print(tabulation + '{:>23}  {:<40}'.format(val, ' '))
+            printTree(child)
+
+    
     
 # This function will take our tree of accounts and add to the nodes
 # the child's balance amount to their balance dictionary. 
