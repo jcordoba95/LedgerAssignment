@@ -12,18 +12,20 @@ class Posting:
     def __init__(self):
         self.account = ""
         self.balances = {}
-        # "coin"    : amount,
-        # "BTC"     : 0.0,
-        # "$"       : 300.00
-        # etc.
 
+class Node:
+    def __init__(self):
+        self.name = ''
+        self.balances = {}
+        self.parent = None
+        self.childs = []
 
 
 priceDbList = []
 ledgerImportsList = []
 transactionData = []
 sortedTransactionData = []
-balCoins = {}
+root = Node()
 
 def priceDbParser(file):
     file = open(file, 'r')
@@ -77,23 +79,32 @@ def main(arguments):
             sortedTransactionData = transactionData
         if 'print' in arguments: ledgerPrint()
         if 'register' in arguments: ledgerRegister()
+        if 'balance' in arguments: ledgerBalance()
+
+        print('Ledger finished.')
             
             
         
 
-
+# This function reads the prices_db file.
 def priceDbFile(file):
     file = open(file, 'r')
     global priceDbList
     priceDbList = file.read().splitlines() 
     file.close()
 
+# This function iterates through the index files that
+# contains the route to ledger files.
 def indexFiles(file):
     file = open(file, 'r')
     global ledgerImportsList
     ledgerImportsList = file.read().splitlines()
     file.close()
 
+# This function reads all the !include X.ledger files,
+# iterates through the file lines and constructs a 
+# data structure where we can work with the information in
+# the ledger files.
 def includeParser(file):
     datePattern = re.compile(r"\d{4}/\d{1,2}/\d{1,2}")
     regex = re.compile(datePattern)
@@ -130,9 +141,6 @@ def includeParser(file):
                     trans = Transaction()
                     trans.date = result.string
                     trans.description = data.replace(trans.date + ' ', '')
-            
-                
-                # print(result.string)
             else:
                 # New Posting
                 posting = Posting()
@@ -147,6 +155,7 @@ def includeParser(file):
                         break
                     if char == ' ':
                         if flag:
+                            account = account[:-1]
                             break
                         flag = True
                     elif char.isalpha():
@@ -183,6 +192,8 @@ def includeParser(file):
             trans.postings[index].balances[coin] *= -1
     transactionData.append(trans)
 
+# This function prints out the transactions in the format
+# acceptable by the ledger files.
 def ledgerPrint():
     for transaction in sortedTransactionData:
         print('\n')
@@ -198,9 +209,8 @@ def ledgerPrint():
 
             print('{:45}{:>5}'.format(account, amount))
 
+# This function prints out the register of our account's transactions.
 def ledgerRegister():
-    # date  desc  acc  movement   coins totals
-    # :9    :20   :20  :>5            :>5
     reminders = {}
     for transaction in sortedTransactionData:
         date = transaction.date
@@ -238,6 +248,65 @@ def ledgerRegister():
                     else:
                         right = str(reminders.get(key2)) + ' ' + key2
                         print('{:9}{:20}{:20}{:>10}{:>10}'.format('', '', '', '', right))
+
+# This function prints out the accounts current balance and total balance.
+# This function creates a data structure of a tree of the accounts found
+# in the ledger files to operate with the account's balances.
+def ledgerBalance():
+    for transaction in sortedTransactionData:
+        for posting in transaction.postings:
+            node = checkExistance(posting.account.split(':'),root)
+            for key in posting.balances:
+                node.balances[key] = float(node.balances.get(key, 0)) + posting.balances.get(key)
+    iterateTree(root)
+    # Now the tree has the corresponding values and is ready to be printed
+
+    
+# This function will take our tree of accounts and add to the nodes
+# the child's balance amount to their balance dictionary. 
+# This includes the root node, where we will store the total 
+# amounts of our transactions.
+def iterateTree(node):
+    if len(node.childs) == 0:
+        return node.balances
+    # Iterate through node's childs
+    for value in node.childs:
+        balancesToAdd = iterateTree(value)
+        # Add the child's balances to the parent's
+        if balancesToAdd != None:
+            for key in balancesToAdd:
+                node.balances[key] = float(node.balances.get(key, 0)) + balancesToAdd.get(key)  
+    return node.balances
+
+# This function creates a node of an account and appends it 
+# to our main tree of accounts if it doesn't exist yet.
+def checkExistance(elements, node):
+    if len(elements) == 0:
+        return node
+    if len(node.childs) == 0:
+        n = Node()
+        n.name = elements[0]
+        node.childs.append(n)
+        n.parent = node
+        elements.remove(elements[0])
+        return checkExistance(elements, n)
+
+    for value in node.childs:
+        if elements[0] == value.name:
+            elements.remove(elements[0])
+            return checkExistance(elements, value)
+    
+    # Node doesn't exist yet in breadth.
+    n = Node()
+    n.name = elements[0]
+    node.childs.append(n)
+    n.parent = node
+    elements.remove(elements[0])
+    return checkExistance(elements, n)
+
+
+
+
 
 if __name__ == '__main__':
     main(sys.argv)
