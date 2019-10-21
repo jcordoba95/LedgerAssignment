@@ -49,4 +49,6 @@ $ ./my-ledger.sh --sort date print
 
 
 ## License
+MIT License
 
+Copyright (c) 2019 Jcordoba
